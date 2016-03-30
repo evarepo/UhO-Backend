@@ -1,0 +1,13 @@
+usersdb:
+  host: localhost 
+  port: 27017
+  collection: user
+  dbname: uhoh
+  
+analysisdb:
+  host: localhost 
+  port: 27017
+  collection: analysis
+  dbname: uhoh
+  
+
