@@ -12,8 +12,10 @@ payload json:
       "fbToken": "EAACEdEose0cBAK14ZCKEZCoUGaRHrOrdusTXKHVsi5uA9ZCY2Nbb647p38UFRECPXIp70aHs6CusOyEIFZBqPShWentXFi5x4FM82HglGhzT0reZBCk9dPDIoKKdkKVEWHJ2C7S8kvDo8pBny2pvUufViLdmSGLbuXGTZAHtsDZBwZDZD",
       "twitterToken": "asdfadsf",
       "pushToken": "adfasfasdf"
-    }
+}
+```
 response json:
+```json
 {
   "code": 200,
   "reason": "success",
