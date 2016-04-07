@@ -6,6 +6,8 @@ Create user when you first get the facebook token. You will receive a response w
 url: http://52.91.235.124:8090/user
 verb: POST
 payload json:
+
+```json
 {
       "fbToken": "EAACEdEose0cBAK14ZCKEZCoUGaRHrOrdusTXKHVsi5uA9ZCY2Nbb647p38UFRECPXIp70aHs6CusOyEIFZBqPShWentXFi5x4FM82HglGhzT0reZBCk9dPDIoKKdkKVEWHJ2C7S8kvDo8pBny2pvUufViLdmSGLbuXGTZAHtsDZBwZDZD",
       "twitterToken": "asdfadsf",
@@ -17,14 +19,15 @@ response json:
   "reason": "success",
   "result": "5705c8783d1d4020d0a5e1ae"
 }
-
+```
 
 ## Get user details:
 query user details on a REST GET call as shown below.
 
 url: http://52.91.235.124:8090/user?id=570568d5df5f08269161018d
 verb: GET
-response json:  
+response json: 
+```json
 {
   "code": 200,
   "reason": "success",
@@ -64,6 +67,8 @@ response json:
     }
   }
 }
+```
+
 
 ## update user
 use this API if you ever need to refresh any user details, such as, fb token or push token or settings etc. The REST call is the same for both create and update. First do a get user call. Get the "user" json sub-structure from it and modify values inside that and pass the entire user structure back to server on the create user call. 
@@ -73,6 +78,8 @@ Example:
 url: http://52.91.235.124:8090/user
 verb: POST
 payload json:
+
+```json
 {
       "fbToken": "EAACEdEose0cBAK14ZCKEZCoUGaRHrOrdusTXKHVsi5uA9ZCY2Nbb647p38UFRECPXIp70aHs6CusOyEIFZBqPShWentXFi5x4FM82HglGhzT0reZBCk9dPDIoKKdkKVEWHJ2C7S8kvDo8pBny2pvUufViLdmSGLbuXGTZAHtsDZBwZDZD",
       "twitterToken": "",
@@ -86,3 +93,4 @@ payload json:
       },
       "uoid": "570568d5df5f08269161018d"
 }
+```
