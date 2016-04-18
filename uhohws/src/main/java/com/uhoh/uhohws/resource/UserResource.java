@@ -6,6 +6,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
@@ -70,10 +71,10 @@ public class UserResource {
 	}
 
 	@POST
-	@Path("/thispostisok")
+	@Path("/thispostisok/{userId}/{postId}/")
 	@Consumes(MediaType.APPLICATION_JSON)
-	public WebResponse thisPostIsOk(@QueryParam("postId") String postId,
-			@QueryParam("userId") String userId) throws JsonProcessingException {
+	public WebResponse thisPostIsOk(@PathParam("postId") String postId,
+			@PathParam("userId") String userId) throws JsonProcessingException {
 		anlDao.markPostAsOK(userId, postId);
 		return new WebResponse(200, "success", null);
 	}

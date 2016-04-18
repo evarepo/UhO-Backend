@@ -30,45 +30,67 @@ import com.uhoh.uhohws.dto.ToneText;
 @SuppressWarnings("deprecation")
 public class ToneAnalyzerService {
 
+	
+
 	public static class Analysis {
-		public ArrayList<ToneNode> tones = null;
+		public ArrayList<ToneNode> tones = new ArrayList<ToneNode>();
 		public String sentiment;
 	}
 
-	private ClientConfig clientConfig = null;
-	Client client = null;
-	String toneURL = "";
-	WebTarget post = null;
+	// private ClientConfig clientConfig = null;
+	// Client client = null;
+	// String toneURL = "";
+	// WebTarget post = null;
 
 	public ToneAnalyzerService() {
-		clientConfig = new ClientConfig();// .register( LoggingFilter.class );
 		// values are in milliseconds
-		//clientConfig.property(ClientProperties.READ_TIMEOUT, 2000);
-		//clientConfig.property(ClientProperties.CONNECT_TIMEOUT, 500);
-		PoolingClientConnectionManager connectionManager = new PoolingClientConnectionManager();
+		// clientConfig.property(ClientProperties.READ_TIMEOUT, 2000);
+		// clientConfig.property(ClientProperties.CONNECT_TIMEOUT, 500);
 
+		/*
+		 * clientConfig = new ClientConfig();// .register( LoggingFilter.class
+		 * ); PoolingClientConnectionManager connectionManager = new
+		 * PoolingClientConnectionManager(); connectionManager.setMaxTotal(1);
+		 * clientConfig.property(ApacheClientProperties.CONNECTION_MANAGER,
+		 * connectionManager); clientConfig.connectorProvider(new
+		 * ApacheConnectorProvider());
+		 * 
+		 * client = ClientBuilder.newClient(clientConfig);
+		 * 
+		 * // GET request to findBook resource with a query parameter toneURL =
+		 * "https://gateway.watsonplatform.net/tone-analyzer-beta/api/v3/tone?version=2016-02-11&sentences=false"
+		 * ; HttpAuthenticationFeature feature =
+		 * HttpAuthenticationFeature.basic(
+		 * "c148fe39-e464-4edf-9699-49a944d74c60", "J5TVrsZa5Poq"); post =
+		 * client.target(toneURL).register(feature);
+		 */
+	}
+
+	public ToneObject analyzeSentence(String toneText)
+			throws InterruptedException {
+
+		ClientConfig clientConfig = new ClientConfig();// .register(
+														// LoggingFilter.class
+														// );
+		PoolingClientConnectionManager connectionManager = new PoolingClientConnectionManager();
 		connectionManager.setMaxTotal(1);
 		clientConfig.property(ApacheClientProperties.CONNECTION_MANAGER,
 				connectionManager);
 		clientConfig.connectorProvider(new ApacheConnectorProvider());
 
-		client = ClientBuilder.newClient(clientConfig);
+		Client client = ClientBuilder.newClient(clientConfig);
 
 		// GET request to findBook resource with a query parameter
-		toneURL = "https://gateway.watsonplatform.net/tone-analyzer-beta/api/v3/tone?version=2016-02-11&sentences=false";
+		String toneURL = "https://gateway.watsonplatform.net/tone-analyzer-beta/api/v3/tone?version=2016-02-11&sentences=false";
 		HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(
 				"c148fe39-e464-4edf-9699-49a944d74c60", "J5TVrsZa5Poq");
-		post = client.target(toneURL).register(feature);
-	}
-
-	public ToneObject analyzeSentence(String toneText) {
+		WebTarget post = client.target(toneURL).register(feature);
 
 		ToneText x = new ToneText(toneText);
 		Invocation.Builder invocationBuilder = post
 				.request(MediaType.APPLICATION_JSON);
 		Response response = invocationBuilder.post(Entity.entity(x,
 				MediaType.APPLICATION_JSON));
-
 		if (response.getStatus() != 200) {
 			return null;
 		} else {
@@ -77,15 +99,22 @@ public class ToneAnalyzerService {
 		}
 	}
 
-	public Analysis isStrong(String toneText) {
+	public Analysis isStrong(String toneText) throws InterruptedException {
 		ToneObject obj = analyzeSentence(toneText);
-		ArrayList<ToneNode> ret = new ArrayList<ToneNode>();
 		Analysis anl = new Analysis();
+
+		if (obj == null) {
+			return anl;
+		}
+
+		ArrayList<ToneNode> ret = new ArrayList<ToneNode>();
 		ToneElement tones = obj.getDocument_tone().getTone_categories().get(0);
-		ToneElement emotional = obj.getDocument_tone().getTone_categories().get(2);
+		ToneElement emotional = obj.getDocument_tone().getTone_categories()
+				.get(2);
 		if (tones.getTones().get(0).getScore() > 0.5
 				&& emotional.getTones().get(4).getScore() > 0.8) {
-			System.out.println("anger + emotional range > threshold: " + toneText);
+			System.out.println("anger + emotional range > threshold: "
+					+ toneText);
 			ret.add(tones.getTones().get(0));
 			ret.add(tones.getTones().get(1));
 			anl.sentiment = "NEG";
@@ -117,7 +146,11 @@ public class ToneAnalyzerService {
 		}
 
 		public void run() {
-			ToneAnalyzerService.printResults(svc.isStrong(txt).tones);
+			try {
+				ToneAnalyzerService.printResults(svc.isStrong(txt).tones);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -128,33 +161,34 @@ public class ToneAnalyzerService {
 		ToneAnalyzerService svc = new ToneAnalyzerService();
 
 		ArrayList<Thread> threads = new ArrayList<Thread>();
-		for( int i=0; i< 10; i++){
+		for (int i = 0; i < 110; i++) {
 			String txt = "trying to explain what's going on to foreigners is hard, but they are looking at us as if we've lost our minds";
-			//Runnable r = new MyThread(svc, txt);
+			// Runnable r = new MyThread(svc, txt);
 			Thread t1 = new Thread(new MyThread(svc, txt));
 			threads.add(t1);
 			t1.start();
 		}
-		
-		for(Thread thread : threads){
+
+		for (Thread thread : threads) {
 			((Thread) thread).join();
 		}
 		/*
-		toneText = "trying to explain what's going on to foreigners is hard, but they are looking at us as if we've lost our minds";
-		printResults(svc.isStrong(toneText).tones);
-		toneText = "trying to explain what's going on to foreigners is hard, but they are looking at us as if we've lost our minds";
-		printResults(svc.isStrong(toneText).tones);
-		toneText = "trying to explain what's going on to foreigners is hard, but they are looking at us as if we've lost our minds";
-		printResults(svc.isStrong(toneText).tones);
-		toneText = "trying to explain what's going on to foreigners is hard, but they are looking at us as if we've lost our minds";
-		printResults(svc.isStrong(toneText).tones);
-		toneText = "trying to explain what's going on to foreigners is hard, but they are looking at us as if we've lost our minds";
-		printResults(svc.isStrong(toneText).tones);
-		toneText = "trying to explain what's going on to foreigners is hard, but they are looking at us as if we've lost our minds";
-		printResults(svc.isStrong(toneText).tones);
-		toneText = "trying to explain what's going on to foreigners is hard, but they are looking at us as if we've lost our minds";
-		printResults(svc.isStrong(toneText).tones);
-*/
+		 * toneText =
+		 * "trying to explain what's going on to foreigners is hard, but they are looking at us as if we've lost our minds"
+		 * ; printResults(svc.isStrong(toneText).tones); toneText =
+		 * "trying to explain what's going on to foreigners is hard, but they are looking at us as if we've lost our minds"
+		 * ; printResults(svc.isStrong(toneText).tones); toneText =
+		 * "trying to explain what's going on to foreigners is hard, but they are looking at us as if we've lost our minds"
+		 * ; printResults(svc.isStrong(toneText).tones); toneText =
+		 * "trying to explain what's going on to foreigners is hard, but they are looking at us as if we've lost our minds"
+		 * ; printResults(svc.isStrong(toneText).tones); toneText =
+		 * "trying to explain what's going on to foreigners is hard, but they are looking at us as if we've lost our minds"
+		 * ; printResults(svc.isStrong(toneText).tones); toneText =
+		 * "trying to explain what's going on to foreigners is hard, but they are looking at us as if we've lost our minds"
+		 * ; printResults(svc.isStrong(toneText).tones); toneText =
+		 * "trying to explain what's going on to foreigners is hard, but they are looking at us as if we've lost our minds"
+		 * ; printResults(svc.isStrong(toneText).tones);
+		 */
 		System.out.println("Time taken: " + (System.currentTimeMillis() - now)); // 5619
 	}
 

@@ -12,6 +12,7 @@ import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import com.uhoh.uhohws.dto.UserObj;
+import com.uhoh.uhohws.service.FacebookService;
 
 
 public class UserDao extends MongoDao {
@@ -30,10 +31,16 @@ public class UserDao extends MongoDao {
 	public String createUser(String user) throws JsonProcessingException{
 //		ObjectMapper mapper = new ObjectMapper();
 //		String json = mapper.writeValueAsString(user);
+		System.out.println("input string: \n" + user);
 		UserObj obj = gson.fromJson(user, UserObj.class);
 		obj.setLastChecked(0L);
 		BasicDBObject userObj = (BasicDBObject) JSON.parse(user);
+		Long now = System.currentTimeMillis();
+		userObj.put("lastUpdatedAt", now);
 		String id = ""; 
+		
+		FacebookService fbSvc = new FacebookService(obj.getFbToken());
+		String name = fbSvc.getName();
 		
 		
 		//see if user exists, then update
@@ -50,11 +57,14 @@ public class UserDao extends MongoDao {
 			userObj.append("UOId", iid.toString());
 			userObj.append("_id", iid);
 			userObj.append("lastChecked", 0L);
+			userObj.put("createdAt", now);
+			userObj.put("name", name);
 			BasicDBObject settings = new BasicDBObject();
 			settings.append("anger", 0);
 			settings.append("foul language", 0);
 			settings.append("political correctness", 0);
 			settings.append("partying", 0);
+			settings.append("monitoring", 1);
 			userObj.append("settings", settings);
 			coll.insert(userObj);
 			ObjectId oid = (ObjectId)userObj.get( "_id" );
@@ -72,10 +82,9 @@ public class UserDao extends MongoDao {
 		return (UserObj)gson.fromJson(obj.toString(), UserObj.class);
 	}
 	
-	public ArrayList<UserObj> getOutstandingUsers(){
+	public ArrayList<UserObj> getOutstandingUsers(long since){
 		//{"lastChecked" : { $lte : 99}}
-		long checkSince = 0L;
-		BasicDBObject qry = new BasicDBObject("lastChecked", new BasicDBObject("$lte", checkSince)  );
+		BasicDBObject qry = new BasicDBObject("lastChecked", new BasicDBObject("$lte", since)  );
 		DBCursor cur = coll.find(qry);
 		ArrayList<UserObj> arr = new ArrayList<UserObj>();  
 		while(cur.hasNext()){
@@ -92,6 +101,7 @@ public class UserDao extends MongoDao {
 		DBObject obj = coll.findOne(o);	
 		Long now = time > 0L ? time : System.currentTimeMillis(); 
 		obj.put("lastChecked", now);
+		coll.update(o, obj);
 	}
 	
 	public void analyzeTwitter(Long lastChecked, String twitterToken){

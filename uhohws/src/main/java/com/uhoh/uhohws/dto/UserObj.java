@@ -13,8 +13,21 @@ public class UserObj {
 	String twitterToken;
 	Long lastChecked;
 	String pushToken;
+	String name;
+	Long createdAt;
+	Long lastUpdatedAt;
 	Map<String, Integer> settings = new HashMap<String, Integer>();
 	
+	
+	
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
 	public void addSetting(String key, Integer val){
 		settings.put(key, val);
 	}
@@ -70,6 +83,26 @@ public class UserObj {
 	}
 	
 	
+
+	public Long getCreatedAt() {
+		return createdAt;
+	}
+
+	public void setCreatedAt(Long createdAt) {
+		this.createdAt = createdAt;
+	}
+
+	public Long getLastUpdatedAt() {
+		return lastUpdatedAt;
+	}
+
+	public void setLastUpdatedAt(Long lastUpdatedAt) {
+		this.lastUpdatedAt = lastUpdatedAt;
+	}
+
+	public void setSettings(Map<String, Integer> settings) {
+		this.settings = settings;
+	}
 
 	public static void main(String[] args){
 		UserObj user = new UserObj();

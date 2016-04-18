@@ -23,12 +23,12 @@ public class AnalyzeUsersJob implements Job {
 		AnalysisDao anlDao = (AnalysisDao) jExeCtx.getJobDetail()
 				.getJobDataMap().get("anlDao");
 
-		System.out.println("Got daos ok: " + userDao.getCollection() + ";;"
+		System.out.println("Got DAOs ok: " + userDao.getCollection() + ";;"
 				+ anlDao.getCollection());
 
-		ArrayList<UserObj> users = userDao.getOutstandingUsers();
-		
-		//exit if no users to process
+		//check for any users that haven't been scanned in the last 6 hrs
+		long since = System.currentTimeMillis() - 6*60*60*1000;
+		ArrayList<UserObj> users = userDao.getOutstandingUsers(since);
 		
 		for(UserObj user : users){
 			try {

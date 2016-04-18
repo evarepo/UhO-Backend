@@ -115,162 +115,172 @@ public class AnalyzeService {
 
 	public AnalysisResponse analyzeUser(UserObj user) {
 
-		String fbToken = user.getFbToken();
-		Long lastChecked = user.getLastChecked();
-		Map<String, ArrayList<ObjectAnalysis>> negMap = new HashMap<String, ArrayList<ObjectAnalysis>>();
-		Set<String> all = new HashSet<String>();
-		Map<String, UOObject> picsMap = new HashMap<String, UOObject>();
-		Map<String, PostAnalysis> anlMap = new HashMap<String, PostAnalysis>();
+		try {
+			String fbToken = user.getFbToken();
+			Long lastChecked = user.getLastChecked();
+			Map<String, ArrayList<ObjectAnalysis>> negMap = new HashMap<String, ArrayList<ObjectAnalysis>>();
+			Set<String> all = new HashSet<String>();
+			Map<String, UOObject> picsMap = new HashMap<String, UOObject>();
+			Map<String, PostAnalysis> anlMap = new HashMap<String, PostAnalysis>();
 
-		FacebookService fbSvc = new FacebookService(fbToken);
-		String myId = fbSvc.getMyId(fbToken);
-		String basePath = "/tmp/" + myId;
-		File f = new File(basePath);
-		f.mkdir();
+			FacebookService fbSvc = new FacebookService(fbToken);
+			String myId = fbSvc.getMyId(fbToken);
+			String basePath = "/tmp/" + myId;
+			File f = new File(basePath);
+			f.mkdir();
 
-		UserAnalysis currAnls = anlDao.getUserAnalysis(user.getUOId());
-		UserAnalysis anls = new UserAnalysis();
-		anls.setUserId(user.getUOId());
-		anls.setAnalysis(anlMap);
-		
-		ArrayList<UOObject> data = fbSvc.getContentsOfUser(lastChecked);
+			UserAnalysis currAnls = anlDao.getUserAnalysis(user.getUOId());
+			UserAnalysis anls = new UserAnalysis();
+			anls.setUserId(user.getUOId());
+			anls.setAnalysis(anlMap);
 
-		ExecutorService executorService = Executors.newFixedThreadPool(10);
+			ArrayList<UOObject> data = fbSvc.getContentsOfUser(lastChecked);
 
-		int i =0;
-		for (UOObject obj : data) {
+			ExecutorService executorService = Executors.newFixedThreadPool(10);
 
-			ObjectAnalysis anl = null;
-			if (obj.getType() == UOConstants.POST_TYPE) {
+			int i = 0;
+			for (UOObject obj : data) {
 
-				// save pic file and send it to visual analysis service
-				if (obj.getPostPic() != null) {
-					if (obj.getPostPic().length() > 0) {
-						try {
-							String name = saveImage(obj.getPostPic(), f);
-							Future<ImagesAnalysis> result = executorService
-									.submit(new PicSvcThread(name, picSvc));
-							// ImagesAnalysis iAnl =
-							// picSvc.analyzeImageBundle(name);
-							ImagesAnalysis iAnl = result.get(120,
-									TimeUnit.SECONDS);
-							if (iAnl != null) {
-								ImageNode n = iAnl.getImages().get(0);
-								if (n != null && n.getScores() != null) {
-									if (n.getScores().size() > 0) {
-										if (n.getScores().get(0).getScore() > 0.61) {
-											addToAnalysisMap(anlMap, obj, "PIC");
-											anls.setNegPhotosSplit(anls.getNegPhotosSplit() + 1);
-											System.out.println("name: "
-													+ name
-													+ "; score: "
-													+ n.getScores().get(0)
-															.getScore());
+				ObjectAnalysis anl = null;
+				if (obj.getType() == UOConstants.POST_TYPE) {
+
+					// save pic file and send it to visual analysis service
+					if (obj.getPostPic() != null) {
+						if (obj.getPostPic().length() > 0) {
+							try {
+								String name = saveImage(obj.getPostPic(), f);
+								Future<ImagesAnalysis> result = executorService
+										.submit(new PicSvcThread(name, picSvc));
+								// ImagesAnalysis iAnl =
+								// picSvc.analyzeImageBundle(name);
+								ImagesAnalysis iAnl = result.get(120,
+										TimeUnit.SECONDS);
+								if (iAnl != null) {
+									ImageNode n = iAnl.getImages().get(0);
+									if (n != null && n.getScores() != null) {
+										if (n.getScores().size() > 0) {
+											if (n.getScores().get(0).getScore() > 0.61) {
+												addToAnalysisMap(anlMap, obj,
+														"PIC");
+												anls.setNegPhotosSplit(anls
+														.getNegPhotosSplit() + 1);
+												System.out.println("name: "
+														+ name
+														+ "; score: "
+														+ n.getScores().get(0)
+																.getScore());
+											}
 										}
 									}
 								}
+								picsMap.put(name, obj);
+							} catch (Exception e) {
+								e.printStackTrace();
 							}
-							picsMap.put(name, obj);
-						} catch (Exception e) {
-							e.printStackTrace();
 						}
 					}
-				}
 
-				// analyze text
-				String msg = obj.getPostMsg();
-				if (msg == null || msg.length() == 0)
-					continue;
+					// analyze text
+					String msg = obj.getPostMsg();
+					if (msg == null || msg.length() == 0)
+						continue;
 
-				Analysis tones = toneSvc.isStrong(msg);
-				executorService.execute(new ToneAnalyzerService.MyThread(
-						toneSvc, msg));
-				if (tones.tones.size() == 0)
-					continue;
-				else {
-					anl = new ObjectAnalysis(obj, tones);
-					if (anl.getTones().sentiment.equals("NEG")) {
-						addToAnalysisMap(anlMap, obj, "POST");
-						anls.setNegCommentsSplit(anls.getNegCommentsSplit() + 1);
+					Analysis tones = toneSvc.isStrong(msg);
+					executorService.execute(new ToneAnalyzerService.MyThread(
+							toneSvc, msg));
+					if (tones.tones.size() == 0)
+						continue;
+					else {
+						anl = new ObjectAnalysis(obj, tones);
+						if (anl.getTones().sentiment.equals("NEG")) {
+							addToAnalysisMap(anlMap, obj, "POST");
+							anls.setNegCommentsSplit(anls.getNegCommentsSplit() + 1);
+						}
 					}
-				}
 
-			} else if (obj.getType() == UOConstants.COMMENT_TYPE) {
-				// analyze text
-				String msg = obj.getCommentMsg();
-				if (msg == null || msg.length() == 0)
-					continue;
-				Analysis tones = toneSvc.isStrong(msg);
-				if (tones.tones.size() == 0)
-					continue;
-				else {
-					anl = new ObjectAnalysis(obj, tones);
-					if (anl.getTones().sentiment.equals("NEG")) {
-						addToAnalysisMap(anlMap, obj, "COMMENT");
-						anls.setNegCommentsSplit(anls.getNegCommentsSplit() + 1);
+				} else if (obj.getType() == UOConstants.COMMENT_TYPE) {
+					// analyze text
+					String msg = obj.getCommentMsg();
+					if (msg == null || msg.length() == 0)
+						continue;
+					Analysis tones = toneSvc.isStrong(msg);
+					if (tones.tones.size() == 0)
+						continue;
+					else {
+						anl = new ObjectAnalysis(obj, tones);
+						if (anl.getTones().sentiment.equals("NEG")) {
+							addToAnalysisMap(anlMap, obj, "COMMENT");
+							anls.setNegCommentsSplit(anls.getNegCommentsSplit() + 1);
 
+						}
 					}
-				}
-			} else {
-
-			}
-
-			if (anl.getTones().sentiment.equals("NEG")) {
-				if (negMap.containsKey(obj.getPostId())) {
-					ArrayList<ObjectAnalysis> list = negMap
-							.get(obj.getPostId());
-					list.add(anl);
 				} else {
-					ArrayList<ObjectAnalysis> list = new ArrayList<ObjectAnalysis>();
-					list.add(anl);
-					negMap.put(obj.getPostId(), list);
+
 				}
+
+				if (anl.getTones().sentiment.equals("NEG")) {
+					if (negMap.containsKey(obj.getPostId())) {
+						ArrayList<ObjectAnalysis> list = negMap.get(obj
+								.getPostId());
+						list.add(anl);
+					} else {
+						ArrayList<ObjectAnalysis> list = new ArrayList<ObjectAnalysis>();
+						list.add(anl);
+						negMap.put(obj.getPostId(), list);
+					}
+				}
+
+				// get all unique posts
+				all.add(obj.getPostId());
+				i++;
+
+				// if(i>10){
+				// break;
+				// }
 			}
 
-			// get all unique posts
-			all.add(obj.getPostId());
-			i++;
-			
-			if(i>10){
-				break;
+			int totalPosts = all.size();
+			int badPosts = anls.getAnalysis().size();
+			int goodPosts = totalPosts - badPosts;
+
+			anls.setPosSplit(goodPosts);
+			anls.setNegSplit(badPosts);
+			anls.setTotalPosts(totalPosts);
+
+			if (currAnls != null) {
+				mergeAnalysis(currAnls, anls);
+
+				anlDao.createUserAnalysis(currAnls);
+			} else {
+				anlDao.createUserAnalysis(anls);
 			}
-		}
 
-		int totalPosts = all.size();
-		int badPosts = anls.getAnalysis().size();
-		int goodPosts = totalPosts - badPosts;
-		
-		anls.setPosSplit(goodPosts);
-		anls.setNegSplit(badPosts);
-		anls.setTotalPosts(totalPosts);
-
-		if(currAnls != null){
-			mergeAnalysis(currAnls, anls);
-			
-			
-			anlDao.createUserAnalysis(currAnls);
+			userDao.updateLastCheckedTime(user.getUOId(),
+					System.currentTimeMillis());
+			return new AnalysisResponse(negMap, all.size());
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return null;
 		}
-		else{
-			anlDao.createUserAnalysis(anls);
-		}
-		
-		userDao.updateLastCheckedTime(user.getUOId(), System.currentTimeMillis());
-		return new AnalysisResponse(negMap, all.size());
 	}
-	
-	private void mergeAnalysis(UserAnalysis old, UserAnalysis now){
-		if(old != null){
+
+	private void mergeAnalysis(UserAnalysis old, UserAnalysis now) {
+		if (old != null) {
 			now.getAnalysis().forEach(old.getAnalysis()::putIfAbsent);
-			
+
 			old.setTotalPosts(old.getTotalPosts() + now.getTotalPosts());
 			old.setPosSplit(old.getPosSplit() + now.getPosSplit());
 			old.setNegSplit(old.getNegSplit() + now.getNegSplit());
-			old.setNegCommentsSplit(old.getNegCommentsSplit() + now.getNegCommentsSplit());
-			old.setNegPhotosSplit(old.getNegPhotosSplit() + now.getNegPhotosSplit());
-			old.setNegVideoSplit(old.getNegVideoSplit() + now.getNegVideoSplit());
+			old.setNegCommentsSplit(old.getNegCommentsSplit()
+					+ now.getNegCommentsSplit());
+			old.setNegPhotosSplit(old.getNegPhotosSplit()
+					+ now.getNegPhotosSplit());
+			old.setNegVideoSplit(old.getNegVideoSplit()
+					+ now.getNegVideoSplit());
 		}
-		
+
 	}
+
 	private String saveImage(String imageUrl, File dir) throws IOException {
 		String destinationFile = getPictureName(imageUrl);
 		URL url = new URL(imageUrl);
@@ -302,9 +312,8 @@ public class AnalyzeService {
 	public static void main(String[] args) throws Exception {
 		AnalysisDao anlDao = new AnalysisDao("localhost", "analysis", "uhoh",
 				27017);
-		
-		UserDao userDao = new UserDao("localhost", "user", "uhoh",
-				27017);
+
+		UserDao userDao = new UserDao("localhost", "user", "uhoh", 27017);
 		AnalyzeService svc = new AnalyzeService(anlDao, userDao);
 		UserObj user = new UserObj();
 		user.setFbToken("CAACEdEose0cBAN98Ry0CIOLtTk0r3AbINx5RZChY5JwV6eINOyPnpxUQAMwMbPPWPfqd18J64f5iawJCU1UWaFvuZBU7KvNsTbZABXaqe8FuNtPH9VFcwrDberZAVKnulqTzQ7ZBr5XLi1l0BgWuwUsed8zMqvOmwYFZCOrgK633OrD1B2IDmxoXKULw7w1yNefdel6uRUIwZDZD");

@@ -15,9 +15,9 @@ class AnalyzerThread implements Runnable {
 	AnalyzerThread(UserObj user, AnalysisDao anlDao, UserDao userDao) {
 		this.user = user;
 		this.anlDao = anlDao;
+		this.userDao = userDao;
 	}
 
-	@Override
 	public void run() {
 		AnalyzeService svc = new AnalyzeService(anlDao, userDao);
 		svc.analyzeUser(user);

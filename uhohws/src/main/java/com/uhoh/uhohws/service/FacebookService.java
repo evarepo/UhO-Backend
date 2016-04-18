@@ -17,6 +17,7 @@ import com.restfb.Connection;
 import com.restfb.DefaultFacebookClient;
 import com.restfb.FacebookClient;
 import com.restfb.Parameter;
+import com.restfb.Version;
 import com.restfb.types.Comment;
 import com.restfb.types.Comments;
 import com.restfb.types.Photo;
@@ -27,7 +28,7 @@ import com.uhoh.uhohws.dto.UOObject;
 
 public class FacebookService {
 
-	private String accessToken = "CAACEdEose0cBAPulQFIvmcFZAbrw7rHXmvIHpUaei4rUXfnb6jZB8q1jCNvWRf9sjZAEc1As30T5IyQR6yypO9caLZCkAQuETF5UmvvMQ1qiOfI5Ntnpgqp9NBWPZBknogGqSBx7GwJb276xMzfPILrMdgMUCKkOWd9KAZBO1PgmqCl6Kfe52vnZB7UUZAshYaLZCtOZCNlxwmbQZDZD";
+	private String accessToken = "CAAOQIj3GSeUBANkmZCwqONcIJtE60g1GWp4TZCy4ZAHdNpCl9h5diIkcuIvNhIatUTHsqhT9L8pF2s8O20RPELQZAdLaLDNWu9ypys2vZCMcMeyv9p2vYITdIHvjTpE5yqvDN2QQHIoqMnaHNMYchlZAdV7XkeAFy3PwC1mIxnQihrHC9L5UIs5SYGaZAhUZBL6VbkESPmxbERcg5b3w1NgQQGM8Em1En3UZD";
 	private FacebookClient facebookClient = null;
 
 	@SuppressWarnings("deprecation")
@@ -35,12 +36,23 @@ public class FacebookService {
 		if (accessToken == null || accessToken.length() == 0) {
 			accessToken = this.accessToken;
 		}
-		facebookClient = new DefaultFacebookClient(accessToken);
+		//facebookClient = new DefaultFacebookClient(accessToken);
+		facebookClient = new DefaultFacebookClient(accessToken, "4ad458da95f1eb5d2700c859138a18c3", Version.LATEST);
 	}
 
 	public String getMyId(String token) {
 		User user = facebookClient.fetchObject("me", User.class);
 		return user.getId();
+	}
+	
+	public String getName(){
+		User user = facebookClient.fetchObject("me", User.class);
+		return user.getName();
+	}
+	
+	public String getEmail(){
+		User user = facebookClient.fetchObject("me", User.class);
+		return user.getEmail();
 	}
 
 	private void parseFeed(Long lastChecked, ArrayList<UOObject> arr,
@@ -143,7 +155,7 @@ public class FacebookService {
 
 	public static void main(String[] args) {
 
-		FacebookService svc = new FacebookService("");
+		FacebookService svc = new FacebookService("CAAOQIj3GSeUBAFQeh59Yn3tFn5En9ID14YJt1TfCMgmFH3FmOYsfdZCMSMiHFrV9AW8IFSlN0wCALm9b0ZAGQVzgLaxj2pK6j2ZAbSFj4F1sRVvTSzxT5eJdQ2i2osTU8QghQ1Y2ZCWKTBC9WJH0lvBB87OPnaAOX6KgeZAL4WIArhFWef7jkinVXykvXS0NMAYlg1BAZAZCZCtXtEqtRYV0nc4ZCzT5f5rQZD");
 		svc.getContentsOfUser(0L);
 
 	}

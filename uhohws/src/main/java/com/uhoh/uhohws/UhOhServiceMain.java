@@ -4,6 +4,7 @@ import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 
+import org.eclipse.jetty.server.Server;
 import org.quartz.JobBuilder;
 import org.quartz.JobDataMap;
 import org.quartz.JobDetail;
@@ -31,7 +32,7 @@ public class UhOhServiceMain extends Application<UhOhConfiguration> {
 
 	@Override
 	public String getName() {
-		return "hello-world";
+		return "UhO-WebServices";
 	}
 
 	@Override
@@ -72,7 +73,7 @@ public class UhOhServiceMain extends Application<UhOhConfiguration> {
 
 	public void run(final UhOhConfiguration conf, final Environment env)
 			throws Exception {
-
+		
 		UserDao userDao = conf.getUserDao();
 		userDao.init();
 		AnalysisDao anlDao = conf.getAnlDao();
